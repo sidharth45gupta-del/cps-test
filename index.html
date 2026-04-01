@@ -1,6 +1,160 @@
 <!DOCTYPE html>
 <html>
 <head>
+  <title>CPS Battle ⚡</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial;
+      text-align: center;
+      background: black;
+      color: #00ffcc;
+    }
+
+    h1 {
+      text-shadow: 0 0 10px #00ffcc;
+    }
+
+    input {
+      padding: 10px;
+      border-radius: 10px;
+      border: none;
+      margin: 10px;
+    }
+
+    #box {
+      width: 80%;
+      max-width: 350px;
+      height: 200px;
+      background: #111;
+      border: 2px solid #00ffcc;
+      margin: 30px auto;
+      line-height: 200px;
+      border-radius: 20px;
+      font-size: 22px;
+      cursor: pointer;
+    }
+
+    #box:active {
+      background: #00ffcc;
+      color: black;
+    }
+
+    .btn {
+      padding: 10px;
+      margin: 5px;
+      border-radius: 10px;
+      border: none;
+      cursor: pointer;
+      background: #00ffcc;
+      color: black;
+    }
+
+    .stats {
+      margin: 5px;
+    }
+
+    .leaderboard {
+      margin-top: 20px;
+      background: #111;
+      padding: 10px;
+      border-radius: 10px;
+    }
+  </style>
+</head>
+<body>
+
+<h1>⚡ CPS Battle</h1>
+
+<input id="name" placeholder="Enter your name" />
+
+<div>
+  <button class="btn" onclick="setTime(1)">1s</button>
+  <button class="btn" onclick="setTime(5)">5s</button>
+  <button class="btn" onclick="setTime(10)">10s</button>
+</div>
+
+<div id="box">Click to Start</div>
+
+<div class="stats">Time: <span id="time">5</span></div>
+<div class="stats">Clicks: <span id="clicks">0</span></div>
+<div class="stats">CPS: <span id="cps">0</span></div>
+
+<button class="btn" onclick="restart()">Restart</button>
+
+<div class="leaderboard">
+  <h3>🏆 Leaderboard</h3>
+  <ul id="board"></ul>
+</div>
+
+<script>
+let clicks = 0;
+let time = 5;
+let maxTime = 5;
+let started = false;
+
+let scores = JSON.parse(localStorage.getItem("scores")) || [];
+
+function updateBoard() {
+  let board = document.getElementById("board");
+  board.innerHTML = "";
+  scores.sort((a,b)=>b.cps-a.cps).slice(0,5).forEach(s=>{
+    board.innerHTML += `<li>${s.name}: ${s.cps}</li>`;
+  });
+}
+updateBoard();
+
+const box = document.getElementById("box");
+
+function setTime(t) {
+  maxTime = t;
+  restart();
+}
+
+box.onclick = () => {
+  if (!started) {
+    started = true;
+    startTimer();
+  }
+  clicks++;
+  document.getElementById("clicks").innerText = clicks;
+};
+
+function startTimer() {
+  let interval = setInterval(() => {
+    time--;
+    document.getElementById("time").innerText = time;
+
+    if (time === 0) {
+      clearInterval(interval);
+      let cps = (clicks / maxTime).toFixed(2);
+      document.getElementById("cps").innerText = cps;
+      box.innerText = "Finished!";
+
+      let name = document.getElementById("name").value || "Player";
+      scores.push({name, cps});
+      localStorage.setItem("scores", JSON.stringify(scores));
+      updateBoard();
+    }
+  }, 1000);
+}
+
+function restart() {
+  clicks = 0;
+  time = maxTime;
+  started = false;
+  document.getElementById("clicks").innerText = 0;
+  document.getElementById("time").innerText = time;
+  document.getElementById("cps").innerText = 0;
+  box.innerText = "Click to Start";
+}
+</script>
+
+</body>
+</html><!DOCTYPE html>
+<html>
+<head>
   <title>CPS Test Ultimate</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
