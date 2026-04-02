@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>CPS Global 🌍</title>
+  <title>CPS Global Pro ⚡</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
@@ -23,23 +23,27 @@
       border-radius: 20px;
       line-height: 200px;
       cursor: pointer;
+      font-size: 22px;
     }
   </style>
 </head>
 <body>
 
-<h1>⚡ CPS Global Battle</h1>
+<h1>⚡ CPS Global Pro</h1>
 
 <input id="name" placeholder="Enter name" />
 <div id="box">Click to Start</div>
 
+<p>Time: <span id="time">5</span></p>
+<p>Clicks: <span id="clicks">0</span></p>
 <p>CPS: <span id="cps">0</span></p>
 
+<h3>🏆 Leaderboard</h3>
 <ul id="board"></ul>
 
 <script>
 
-// 🔥 YOUR FIREBASE CONFIG (already correct)
+// 🔥 Firebase config (yours)
 const firebaseConfig = {
   apiKey: "AIzaSyCOp7OVHvVZqLkERAWzeupEXA45fouDNcU",
   authDomain: "cps-test-20b25.firebaseapp.com",
@@ -49,30 +53,75 @@ const firebaseConfig = {
   appId: "1:484754631979:web:4610d753d8bf22b980a96e"
 };
 
-// Init
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
-// Game
+// Game variables
 let clicks = 0;
-let started = false;
+let time = 5;
+let interval;
+let gameStarted = false;
+let countdownRunning = false;
 
 const box = document.getElementById("box");
 
 box.onclick = () => {
-  if (!started) {
-    started = true;
-    setTimeout(endGame, 5000);
+  // prevent early clicking
+  if (!countdownRunning && !gameStarted) {
+    startCountdown();
+  } else if (gameStarted) {
+    clicks++;
+    document.getElementById("clicks").innerText = clicks;
   }
-  clicks++;
 };
 
+function startCountdown() {
+  countdownRunning = true;
+  let count = 3;
+  box.innerText = count;
+
+  let cd = setInterval(() => {
+    count--;
+    if (count === 0) {
+      clearInterval(cd);
+      startGame();
+    } else {
+      box.innerText = count;
+    }
+  }, 1000);
+}
+
+function startGame() {
+  countdownRunning = false;
+  gameStarted = true;
+  clicks = 0;
+  time = 5;
+
+  document.getElementById("clicks").innerText = 0;
+  document.getElementById("time").innerText = time;
+  box.innerText = "CLICK!";
+
+  interval = setInterval(() => {
+    time--;
+    document.getElementById("time").innerText = time;
+
+    if (time <= 0) {
+      clearInterval(interval);
+      endGame();
+    }
+  }, 1000);
+}
+
 async function endGame() {
+  gameStarted = false;
+
   let cps = (clicks / 5).toFixed(2);
   document.getElementById("cps").innerText = cps;
+  box.innerText = "Finished! Click again";
 
   let name = document.getElementById("name").value || "Player";
 
+  // Save score
   await db.collection("scores").add({
     name: name,
     cps: parseFloat(cps)
