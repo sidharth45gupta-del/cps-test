@@ -1,8 +1,10 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>CPS Battle ⚡</title>
+  <title>CPS Battle Pro ⚡</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
   <style>
     body {
       margin: 0;
@@ -13,32 +15,27 @@
     }
 
     h1 {
-      text-shadow: 0 0 10px #00ffcc;
-    }
-
-    input {
-      padding: 10px;
-      border-radius: 10px;
-      border: none;
-      margin: 10px;
+      text-shadow: 0 0 15px #00ffcc;
     }
 
     #box {
       width: 80%;
       max-width: 350px;
       height: 200px;
+      margin: 30px auto;
       background: #111;
       border: 2px solid #00ffcc;
-      margin: 30px auto;
-      line-height: 200px;
       border-radius: 20px;
-      font-size: 22px;
+      line-height: 200px;
+      font-size: 24px;
       cursor: pointer;
+      transition: 0.2s;
     }
 
     #box:active {
       background: #00ffcc;
       color: black;
+      transform: scale(0.95);
     }
 
     .btn {
@@ -51,23 +48,15 @@
       color: black;
     }
 
-    .stats {
-      margin: 5px;
-    }
-
-    .leaderboard {
+    canvas {
+      max-width: 90%;
       margin-top: 20px;
-      background: #111;
-      padding: 10px;
-      border-radius: 10px;
     }
   </style>
 </head>
 <body>
 
-<h1>⚡ CPS Battle</h1>
-
-<input id="name" placeholder="Enter your name" />
+<h1>⚡ CPS Battle Pro</h1>
 
 <div>
   <button class="btn" onclick="setTime(1)">1s</button>
@@ -77,77 +66,107 @@
 
 <div id="box">Click to Start</div>
 
-<div class="stats">Time: <span id="time">5</span></div>
-<div class="stats">Clicks: <span id="clicks">0</span></div>
-<div class="stats">CPS: <span id="cps">0</span></div>
+<p>Time: <span id="time">5</span></p>
+<p>Clicks: <span id="clicks">0</span></p>
+<p>CPS: <span id="cps">0</span></p>
 
 <button class="btn" onclick="restart()">Restart</button>
 
-<div class="leaderboard">
-  <h3>🏆 Leaderboard</h3>
-  <ul id="board"></ul>
-</div>
+<canvas id="graph"></canvas>
 
 <script>
 let clicks = 0;
 let time = 5;
 let maxTime = 5;
 let started = false;
+let countdownStarted = false;
 
-let scores = JSON.parse(localStorage.getItem("scores")) || [];
+let cpsData = [];
 
-function updateBoard() {
-  let board = document.getElementById("board");
-  board.innerHTML = "";
-  scores.sort((a,b)=>b.cps-a.cps).slice(0,5).forEach(s=>{
-    board.innerHTML += `<li>${s.name}: ${s.cps}</li>`;
-  });
-}
-updateBoard();
+const ctx = document.getElementById('graph').getContext('2d');
+let chart = new Chart(ctx, {
+  type: 'line',
+  data: {
+    labels: [],
+    datasets: [{
+      label: 'CPS',
+      data: [],
+      borderWidth: 2
+    }]
+  }
+});
 
-const box = document.getElementById("box");
-
-function setTime(t) {
+function setTime(t){
   maxTime = t;
   restart();
 }
 
+const box = document.getElementById("box");
+
 box.onclick = () => {
-  if (!started) {
-    started = true;
-    startTimer();
+  if (!countdownStarted) {
+    startCountdown();
+  } else if (started) {
+    clicks++;
+    document.getElementById("clicks").innerText = clicks;
   }
-  clicks++;
-  document.getElementById("clicks").innerText = clicks;
 };
 
-function startTimer() {
-  let interval = setInterval(() => {
+function startCountdown() {
+  countdownStarted = true;
+  let count = 3;
+  box.innerText = count;
+
+  let cd = setInterval(()=>{
+    count--;
+    if(count === 0){
+      clearInterval(cd);
+      startGame();
+    } else {
+      box.innerText = count;
+    }
+  },1000);
+}
+
+function startGame() {
+  started = true;
+  box.innerText = "CLICK!";
+  let interval = setInterval(()=>{
     time--;
     document.getElementById("time").innerText = time;
 
-    if (time === 0) {
-      clearInterval(interval);
-      let cps = (clicks / maxTime).toFixed(2);
-      document.getElementById("cps").innerText = cps;
-      box.innerText = "Finished!";
+    let cps = clicks / (maxTime - time);
+    cpsData.push(cps);
 
-      let name = document.getElementById("name").value || "Player";
-      scores.push({name, cps});
-      localStorage.setItem("scores", JSON.stringify(scores));
-      updateBoard();
+    chart.data.labels.push("");
+    chart.data.datasets[0].data.push(cps);
+    chart.update();
+
+    if(time === 0){
+      clearInterval(interval);
+      started = false;
+      let final = (clicks / maxTime).toFixed(2);
+      document.getElementById("cps").innerText = final;
+      box.innerText = "Finished!";
     }
-  }, 1000);
+  },1000);
 }
 
-function restart() {
+function restart(){
   clicks = 0;
   time = maxTime;
   started = false;
+  countdownStarted = false;
+  cpsData = [];
+
   document.getElementById("clicks").innerText = 0;
   document.getElementById("time").innerText = time;
   document.getElementById("cps").innerText = 0;
   box.innerText = "Click to Start";
+
+  chart.data.labels = [];
+  chart.data.datasets[0].data = [];
+  chart.update();
 }
 </script>
 
