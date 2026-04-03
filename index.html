@@ -13,6 +13,7 @@
       color: #00ffcc;
       text-align: center;
       font-family: Arial;
+      user-select: none; /* 🔥 fix text selection */
     }
 
     #box {
@@ -84,6 +85,7 @@ function setTime(t){
   document.getElementById("time").innerText = t;
 }
 
+// CLICK HANDLER
 box.onclick = () => {
   if (!countdownRunning && !gameStarted) {
     startCountdown();
@@ -132,17 +134,22 @@ function startGame() {
 
 async function endGame() {
   gameStarted = false;
+  countdownRunning = false;
 
   let cps = (clicks / maxTime).toFixed(2);
   document.getElementById("cps").innerText = cps;
-  box.innerText = "Finished!";
+  box.innerText = "Click to Start"; // 🔥 FIX auto restart
 
   let name = document.getElementById("name").value || "Player";
 
-  await db.collection("scores").add({
-    name: name,
-    cps: parseFloat(cps)
-  });
+  try {
+    await db.collection("scores").add({
+      name: name,
+      cps: parseFloat(cps)
+    });
+  } catch (e) {
+    console.log("Firebase error:", e);
+  }
 
   loadScores();
 }
@@ -151,15 +158,20 @@ async function loadScores() {
   let board = document.getElementById("board");
   board.innerHTML = "";
 
-  let snapshot = await db.collection("scores")
-    .orderBy("cps", "desc")
-    .limit(5)
-    .get();
+  try {
+    let snapshot = await db.collection("scores")
+      .orderBy("cps", "desc")
+      .limit(5)
+      .get();
 
-  snapshot.forEach(doc => {
-    let d = doc.data();
-    board.innerHTML += `<li>${d.name} - ${d.cps}</li>`;
-  });
+    snapshot.forEach(doc => {
+      let d = doc.data();
+      board.innerHTML += `<li>${d.name} - ${d.cps}</li>`;
+    });
+  } catch (e) {
+    board.innerHTML = "⚠️ Leaderboard not loading";
+    console.log("Error:", e);
+  }
 }
 
 loadScores();
